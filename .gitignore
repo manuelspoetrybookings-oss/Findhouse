@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+api/.dev.vars
+api/.dev.vars.*
+!api/.dev.vars.example
+api/.wrangler/
+.vercel/
