@@ -87,3 +87,6 @@ Then perform the account-backed smoke test above. Do not treat the local SQLite 
 
 
 Profile picture uploads use the MEDIA R2 binding. Usernames have case-insensitive database uniqueness. Phone numbers are withheld from other users unless sharePhone is explicitly enabled. Address is an optional business address or area visible to signed-in users. Chat does not expose phone numbers. Profile photos are public; private bucket objects are not listed or exposed by the API.
+
+Production Clerk uses CLERK_PROXY_URL=https://rentarapp.vercel.app/__clerk and the web/api/clerk.mjs Vercel Function. web/vercel.json rewrites /__clerk requests to that function. CLERK_SECRET_KEY is runtime-only and never copied into static output. The browser loads ClerkJS through the proxy for live publishable keys. Worker verification uses the production issuer and /__clerk/.well-known/jwks.json. This static JavaScript app does not use Next.js middleware. No vercel.app DNS records are required. Production email code delivery still requires an account-backed verification test.
+
