@@ -6,6 +6,8 @@ export async function proxyClerk(request,env=process.env,send=fetch){
  const source=new URL(request.url),proxy=new URL(proxyURL);
  let path=source.pathname.startsWith('/__clerk')?source.pathname.slice('/__clerk'.length):'/'+(source.searchParams.get('__clerk_path')||'');
  source.searchParams.delete('__clerk_path');
+ // Vercel also supplies the named rewrite capture as a query parameter.
+ source.searchParams.delete('path');
  let decoded;try{decoded=decodeURIComponent(path);}catch{return new Response('Invalid path',{status:400});}
  if(!path.startsWith('/')||decoded.startsWith('//')||decoded.includes('\\')||decoded.split('/').includes('..'))return new Response('Invalid path',{status:400});
  const target=new URL(upstreamOrigin);target.pathname=path;target.search=source.search;
