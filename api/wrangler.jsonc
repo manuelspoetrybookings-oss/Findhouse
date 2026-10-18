@@ -10,8 +10,8 @@
   },
   "vars": {
     "ENVIRONMENT": "production",
-    "CLERK_ISSUER": "https://apt-dogfish-766.clerk.accounts.dev",
-    "CLERK_JWKS_URL": "https://apt-dogfish-766.clerk.accounts.dev/.well-known/jwks.json",
+    "CLERK_ISSUER": "https://clerk.rentarapp.vercel.app",
+    "CLERK_JWKS_URL": "https://rentarapp.vercel.app/__clerk/.well-known/jwks.json",
     "ALLOWED_ORIGINS": "https://rentarapp.vercel.app,https://lowoo.vercel.app,https://naija-homes-beta.vercel.app"
   },
   "d1_databases": [
