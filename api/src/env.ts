@@ -1,5 +1,6 @@
 export interface Env {
   DB: D1Database;
+  MEDIA: R2Bucket;
   ENVIRONMENT: string;
   CLERK_ISSUER: string;
   CLERK_JWKS_URL: string;
