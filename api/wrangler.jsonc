@@ -1,15 +1,31 @@
 {
-  "name":"naija-homes-api",
-  "main":"src/index.ts",
-  "compatibility_date":"2026-10-17",
-  "compatibility_flags":["nodejs_compat"],
-  "observability":{"enabled":true},
-  "vars":{
-    "ENVIRONMENT":"production",
-    "CLERK_ISSUER":"https://apt-dogfish-766.clerk.accounts.dev",
-    "CLERK_JWKS_URL":"https://apt-dogfish-766.clerk.accounts.dev/.well-known/jwks.json",
-    "ALLOWED_ORIGINS":"https://YOUR-PROJECT.vercel.app"
+  "name": "naija-homes-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-17",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "observability": {
+    "enabled": true
   },
-  "d1_databases":[{"binding":"DB","database_name":"naija-homes","database_id":"REPLACE_WITH_D1_DATABASE_ID","migrations_dir":"migrations"}]
+  "vars": {
+    "ENVIRONMENT": "production",
+    "CLERK_ISSUER": "https://apt-dogfish-766.clerk.accounts.dev",
+    "CLERK_JWKS_URL": "https://apt-dogfish-766.clerk.accounts.dev/.well-known/jwks.json",
+    "ALLOWED_ORIGINS": "https://lowoo.vercel.app,https://naija-homes-beta.vercel.app"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rentar",
+      "database_id": "ad96d1b6-5033-4c14-9ea3-2791a71c3a67",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "bucket_name": "rentar",
+      "binding": "MEDIA"
+    }
+  ]
 }
-
