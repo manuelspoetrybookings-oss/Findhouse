@@ -10,3 +10,4 @@ test('build rejects missing or malformed configuration',()=>{
 test('missing backend produces explicit setup state without a fake endpoint',()=>{
  const result=spawnSync(process.execPath,['scripts/build.mjs'],{encoding:'utf8',env:{...process.env,CLERK_PUBLISHABLE_KEY:key,CLOUDFLARE_API_URL:''}});assert.equal(result.status,0,result.stderr);const config=readFileSync('dist/config.js','utf8');assert.match(config,/"apiUrl":null/);assert.match(config,/"backendConfigured":false/);
 });
+test('isolated Vercel web root builds without exposing backend source',()=>{const result=spawnSync(process.execPath,['scripts/build.mjs','--web-root'],{encoding:'utf8',env:{...process.env,CLERK_PUBLISHABLE_KEY:key,CLOUDFLARE_API_URL:''}});assert.equal(result.status,0,result.stderr);const config=readFileSync('web/dist/config.js','utf8');assert.match(config,/"backendConfigured":false/);});
