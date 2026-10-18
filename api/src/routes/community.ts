@@ -40,9 +40,12 @@ community.post('/conversations/:id/messages',async c=>{const id=await member(c),
 community.get('/inspections',async c=>{
  const me=c.get('user').id;
  return c.json((await c.env.DB.prepare(`SELECT r.id,r.requester_id AS requesterId,r.provider_id AS providerId,r.title,r.area,r.budget,r.preferred_at AS preferredAt,r.status,r.created_at AS createdAt,p.display_name AS requesterName,
- EXISTS(SELECT 1 FROM inspection_offers o WHERE o.request_id=r.id AND o.provider_id=?) AS offered
+ EXISTS(SELECT 1 FROM inspection_offers o WHERE o.request_id=r.id AND o.provider_id=?) AS offered,
+ (SELECT COUNT(*) FROM inspection_likes WHERE request_id=r.id) AS likeCount,
+ (SELECT COUNT(*) FROM inspection_comments WHERE request_id=r.id) AS commentCount,
+ EXISTS(SELECT 1 FROM inspection_likes WHERE request_id=r.id AND user_id=?) AS liked
  FROM inspection_requests r JOIN profiles p ON p.user_id=r.requester_id JOIN users u ON u.id=r.requester_id
- WHERE u.status='active' AND (r.status='open' OR r.requester_id=? OR r.provider_id=?) ORDER BY r.created_at DESC,r.id DESC LIMIT 100`).bind(me,me,me).all()).results);
+ WHERE u.status='active' AND r.deleted_at IS NULL AND (r.status='open' OR r.requester_id=? OR r.provider_id=? OR ?='admin') ORDER BY r.created_at DESC,r.id DESC LIMIT 100`).bind(me,me,me,me,c.get('user').role).all()).results);
 });
 community.post('/inspections',async c=>{
  const b=await body(c),title=text(b,'title',100),area=text(b,'area',100),details=text(b,'details',2000);
@@ -52,15 +55,22 @@ community.post('/inspections',async c=>{
  const id=ulid(),t=now();await c.env.DB.prepare('INSERT INTO inspection_requests (id,requester_id,listing_id,title,area,details,budget,preferred_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(id,c.get('user').id,listing,title,area,details,b.budget,preferred,t,t).run();return c.json({id},201);
 });
 community.get('/inspections/:id',async c=>{
- const r=await c.env.DB.prepare('SELECT r.*,p.display_name AS requesterName FROM inspection_requests r JOIN profiles p ON p.user_id=r.requester_id WHERE r.id=?').bind(c.req.param('id')).first<any>();if(!r)throw new HttpError(404,'not_found');
- const me=c.get('user').id;if(r.status!=='open'&&r.requester_id!==me&&r.provider_id!==me)throw new HttpError(404,'not_found');
+ const r=await visibleInspection(c);
+ const me=c.get('user').id;
  const offers=r.requester_id===me?(await c.env.DB.prepare('SELECT o.provider_id AS id,p.display_name AS displayName FROM inspection_offers o JOIN profiles p ON p.user_id=o.provider_id JOIN users u ON u.id=o.provider_id WHERE o.request_id=? AND u.status=\'active\' ORDER BY o.created_at').bind(r.id).all()).results:[];
- return c.json({...r,offers,report:r.requester_id===me||r.provider_id===me?r.report:null});
+ const stats=await c.env.DB.prepare('SELECT (SELECT COUNT(*) FROM inspection_likes WHERE request_id=?) AS likeCount,(SELECT COUNT(*) FROM inspection_comments WHERE request_id=?) AS commentCount,EXISTS(SELECT 1 FROM inspection_likes WHERE request_id=? AND user_id=?) AS liked').bind(r.id,r.id,r.id,me).first();
+ return c.json({...r,...stats,offers,report:r.requester_id===me||r.provider_id===me?r.report:null});
 });
-community.post('/inspections/:id/offer',async c=>{const r=await c.env.DB.prepare('SELECT * FROM inspection_requests WHERE id=?').bind(c.req.param('id')).first<any>(),me=c.get('user').id;if(!r||r.status!=='open')throw new HttpError(409,'request_not_open');if(r.requester_id===me)throw new HttpError(400,'cannot_offer_own_request');await c.env.DB.prepare("INSERT OR IGNORE INTO inspection_offers SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM inspection_requests WHERE id=? AND status='open')").bind(r.id,me,now(),r.id).run();return c.json({ok:true});});
+community.post('/inspections/:id/offer',async c=>{await visibleInspection(c);const r=await c.env.DB.prepare('SELECT * FROM inspection_requests WHERE id=?').bind(c.req.param('id')).first<any>(),me=c.get('user').id;if(!r||r.status!=='open')throw new HttpError(409,'request_not_open');if(r.requester_id===me)throw new HttpError(400,'cannot_offer_own_request');await c.env.DB.prepare("INSERT OR IGNORE INTO inspection_offers SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM inspection_requests WHERE id=? AND status='open')").bind(r.id,me,now(),r.id).run();return c.json({ok:true});});
 community.patch('/inspections/:id',async c=>{
  const b=await body(c),id=c.req.param('id'),me=c.get('user').id;let result;
- if(b.action==='assign'){
+ await visibleInspection(c);
+ if(b.action==='edit'){
+  const title=text(b,'title',100),area=text(b,'area',100),details=text(b,'details',2000);
+  if(!Number.isSafeInteger(b.budget)||b.budget<0||b.budget>100000000)throw new HttpError(400,'invalid_budget');
+  let preferred:string|null=null;if(b.preferredAt){const date=new Date(b.preferredAt);if(!Number.isFinite(date.getTime()))throw new HttpError(400,'invalid_preferredAt');preferred=date.toISOString();}
+  result=await c.env.DB.prepare('UPDATE inspection_requests SET title=?,area=?,details=?,budget=?,preferred_at=?,updated_at=? WHERE id=? AND requester_id=? AND deleted_at IS NULL').bind(title,area,details,b.budget,preferred,now(),id,me).run();
+ }else if(b.action==='assign'){
   const provider=text(b,'providerId',100);await active(c.env.DB,provider);
   result=await c.env.DB.prepare("UPDATE inspection_requests SET provider_id=?,status='assigned',updated_at=? WHERE id=? AND requester_id=? AND status='open' AND EXISTS(SELECT 1 FROM inspection_offers WHERE request_id=? AND provider_id=?)").bind(provider,now(),id,me,id,provider).run();
  }else if(b.action==='submit'){
@@ -70,3 +80,20 @@ community.patch('/inspections/:id',async c=>{
  else throw new HttpError(400,'invalid_action');
  if(!result.meta.changes)throw new HttpError(409,'action_not_allowed');return c.json({ok:true});
 });
+
+async function visibleInspection(c:any){
+ const r=await c.env.DB.prepare("SELECT r.*,p.display_name AS requesterName FROM inspection_requests r JOIN profiles p ON p.user_id=r.requester_id JOIN users u ON u.id=r.requester_id WHERE r.id=? AND r.deleted_at IS NULL AND u.status='active'").bind(c.req.param('id')).first();
+ if(!r)throw new HttpError(404,'not_found');const me=c.get('user');
+ if(r.status!=='open'&&r.requester_id!==me.id&&r.provider_id!==me.id&&me.role!=='admin')throw new HttpError(404,'not_found');return r;
+}
+community.delete('/inspections/:id',async c=>{
+ const r=await visibleInspection(c),me=c.get('user');if(r.requester_id!==me.id&&me.role!=='admin')throw new HttpError(403,'forbidden');
+ const t=now();await c.env.DB.batch([
+  c.env.DB.prepare('UPDATE inspection_requests SET deleted_at=?,updated_at=? WHERE id=? AND deleted_at IS NULL').bind(t,t,r.id),
+  c.env.DB.prepare('INSERT INTO audit_logs (id,actor_user_id,action,entity_type,entity_id,created_at) VALUES (?,?,?,?,?,?)').bind(ulid(),me.id,'marketplace.delete','inspection_request',r.id,t)
+ ]);return c.json({ok:true});
+});
+community.put('/inspections/:id/like',async c=>{const r=await visibleInspection(c);await c.env.DB.prepare('INSERT OR IGNORE INTO inspection_likes (request_id,user_id,created_at) SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM inspection_requests WHERE id=? AND deleted_at IS NULL)').bind(r.id,c.get('user').id,now(),r.id).run();return c.json({ok:true});});
+community.delete('/inspections/:id/like',async c=>{const r=await visibleInspection(c);await c.env.DB.prepare('DELETE FROM inspection_likes WHERE request_id=? AND user_id=?').bind(r.id,c.get('user').id).run();return c.json({ok:true});});
+community.get('/inspections/:id/comments',async c=>{const r=await visibleInspection(c);return c.json((await c.env.DB.prepare("SELECT * FROM (SELECT m.id,m.user_id AS userId,m.body,m.created_at AS createdAt,p.display_name AS displayName FROM inspection_comments m JOIN profiles p ON p.user_id=m.user_id JOIN users u ON u.id=m.user_id WHERE m.request_id=? AND m.id<? AND u.status='active' ORDER BY m.id DESC LIMIT 100) ORDER BY id").bind(r.id,c.req.query('before')||'~').all()).results);});
+community.post('/inspections/:id/comments',async c=>{const r=await visibleInspection(c),b=await body(c),message=text(b,'body',1000),id=ulid();const result=await c.env.DB.prepare('INSERT INTO inspection_comments (id,request_id,user_id,body,created_at) SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM inspection_requests WHERE id=? AND deleted_at IS NULL)').bind(id,r.id,c.get('user').id,message,now(),r.id).run();if(!result.meta.changes)throw new HttpError(404,'not_found');return c.json({id},201);});
