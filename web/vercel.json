@@ -1,1 +1,36 @@
-{"buildCommand":"node ../scripts/build.mjs --web-root","installCommand":"echo No frontend dependencies","outputDirectory":"dist","framework":null,"headers":[{"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"}]},{"source":"/config.js","headers":[{"key":"Cache-Control","value":"no-store"}]}]}
+{
+  "buildCommand": "node ../scripts/build.mjs --web-root",
+  "installCommand": "echo No frontend dependencies",
+  "outputDirectory": "dist",
+  "framework": null,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
+      "source": "/config.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/__clerk/:path*",
+      "destination": "/api/clerk?__clerk_path=:path*"
+    }
+  ]
+}
