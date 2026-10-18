@@ -35,7 +35,7 @@ it('keeps chats private, contacts idempotent, and inspection transitions restric
  expect((await req(path+'/offer','POST',1,{})).status).toBe(200);
  expect((await req(path,'PATCH',0,{action:'assign',providerId:b})).status).toBe(200);
  expect((await req(path,'GET',2)).status).toBe(404);
- expect((await req(path,'PATCH',2,{action:'submit',report:'fake'})).status).toBe(409);
+ expect((await req(path,'PATCH',2,{action:'submit',report:'fake'})).status).toBe(404);
  expect((await req(path,'PATCH',0,{action:'complete'})).status).toBe(409);
  expect((await req(path,'PATCH',1,{action:'submit',report:'Water works. Road access checked.'})).status).toBe(200);
  expect((await req(path,'PATCH',1,{action:'complete'})).status).toBe(409);
