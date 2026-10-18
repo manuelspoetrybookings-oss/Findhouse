@@ -8,19 +8,19 @@ const now=()=>Math.floor(Date.now()/1000);
 async function body(c:any){const b=await c.req.json().catch(()=>{throw new HttpError(400,'invalid_json')});if(!b||typeof b!=='object'||Array.isArray(b))throw new HttpError(400,'invalid_body');return b;}
 function text(b:any,k:string,max:number){if(typeof b[k]!=='string'||!b[k].trim()||b[k].trim().length>max)throw new HttpError(400,'invalid_'+k);return b[k].trim();}
 async function active(db:D1Database,id:string){if(!await db.prepare("SELECT id FROM users WHERE id=? AND status='active'").bind(id).first())throw new HttpError(404,'user_not_found');}
-const profileSQL=`SELECT p.user_id AS id,p.handle,p.display_name AS displayName,p.bio,p.followers_count AS followersCount,p.following_count AS followingCount FROM profiles p JOIN users u ON u.id=p.user_id WHERE u.status='active'`;
+const profileSQL=`SELECT p.user_id AS id,p.handle,p.display_name AS displayName,p.bio,p.avatar_key AS avatarKey,p.address,CASE WHEN p.share_phone=1 THEN p.contact_phone ELSE NULL END AS phone,p.followers_count AS followersCount,p.following_count AS followingCount FROM profiles p JOIN users u ON u.id=p.user_id WHERE u.status='active'`;
 community.get('/users',async c=>{
  const q=(c.req.query('q')||'').trim().slice(0,60);
- const followed=c.req.query('following')==='1';
+ const followed=c.req.query('contacts')==='1';
  return c.json((await c.env.DB.prepare(profileSQL+" AND p.user_id<>? AND (p.handle LIKE ? OR p.display_name LIKE ?)"+(followed?' AND EXISTS(SELECT 1 FROM follows WHERE follower_id=? AND followed_id=p.user_id)':'')+" ORDER BY p.display_name LIMIT 100").bind(c.get('user').id,'%'+q+'%','%'+q+'%',...(followed?[c.get('user').id]:[])).all()).results);
 });
 community.get('/users/:id',async c=>{
  const p=await c.env.DB.prepare(profileSQL+' AND p.user_id=?').bind(c.req.param('id')).first();if(!p)throw new HttpError(404,'not_found');
- const followed=!!await c.env.DB.prepare('SELECT 1 FROM follows WHERE follower_id=? AND followed_id=?').bind(c.get('user').id,c.req.param('id')).first();return c.json({...p,followed});
+ const followed=!!await c.env.DB.prepare('SELECT 1 FROM follows WHERE follower_id=? AND followed_id=?').bind(c.get('user').id,c.req.param('id')).first();return c.json({...p,added:followed});
 });
-community.get('/following',async c=>c.json((await c.env.DB.prepare('SELECT followed_id AS id FROM follows WHERE follower_id=?').bind(c.get('user').id).all()).results));
-community.put('/users/:id/follow',async c=>{const id=c.req.param('id'),me=c.get('user').id;if(id===me)throw new HttpError(400,'cannot_follow_self');await active(c.env.DB,id);await c.env.DB.prepare('INSERT OR IGNORE INTO follows VALUES (?,?,?)').bind(me,id,now()).run();return c.json({ok:true});});
-community.delete('/users/:id/follow',async c=>{await c.env.DB.prepare('DELETE FROM follows WHERE follower_id=? AND followed_id=?').bind(c.get('user').id,c.req.param('id')).run();return c.json({ok:true});});
+community.get('/contacts',async c=>c.json((await c.env.DB.prepare('SELECT followed_id AS id FROM follows WHERE follower_id=?').bind(c.get('user').id).all()).results));
+community.put('/users/:id/contact',async c=>{const id=c.req.param('id'),me=c.get('user').id;if(id===me)throw new HttpError(400,'cannot_add_self');await active(c.env.DB,id);await c.env.DB.prepare('INSERT OR IGNORE INTO follows VALUES (?,?,?)').bind(me,id,now()).run();return c.json({ok:true});});
+community.delete('/users/:id/contact',async c=>{await c.env.DB.prepare('DELETE FROM follows WHERE follower_id=? AND followed_id=?').bind(c.get('user').id,c.req.param('id')).run();return c.json({ok:true});});
 community.get('/conversations',async c=>{
  const me=c.get('user').id;return c.json((await c.env.DB.prepare(`SELECT c.id,p.user_id AS peerId,p.display_name AS displayName,
  (SELECT body FROM messages WHERE conversation_id=c.id ORDER BY id DESC LIMIT 1) AS lastMessage,
