@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { community } from './routes/community';
 import { secureHeaders } from "hono/secure-headers";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
@@ -21,6 +22,7 @@ export function createApp(resolveKey: KeyResolver = clerkKeyResolver) {
   app.route("/v1/me", me);
   app.route('/v1/listings',listings);
   app.route('/v1/saved',saved);
+  app.route('/v1/community',community);
 
   app.notFound((c) => c.json({ error: "not_found" }, 404));
   app.onError((err, c) => {
