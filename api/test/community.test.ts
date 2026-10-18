@@ -3,7 +3,7 @@ import {generateKeyPair,SignJWT} from 'jose';
 import {createApp} from '../src/index';
 import {makeD1} from './helpers/d1';
 
-it('keeps chats private, follows idempotent, and inspection transitions restricted to participants',async()=>{
+it('keeps chats private, contacts idempotent, and inspection transitions restricted to participants',async()=>{
  const {publicKey,privateKey}=await generateKeyPair('RS256'),{d1,db}=makeD1(),app=createApp(()=>publicKey);
  const env={DB:d1,ENVIRONMENT:'production',CLERK_ISSUER:'https://clerk.example',CLERK_JWKS_URL:'unused',ALLOWED_ORIGINS:'https://lowoo.vercel.app'} as any;
  const token=async(sub:string)=>new SignJWT({azp:'https://lowoo.vercel.app'}).setProtectedHeader({alg:'RS256'}).setIssuer(env.CLERK_ISSUER).setSubject(sub).setIssuedAt().setExpirationTime('5m').sign(privateKey);
@@ -12,11 +12,11 @@ it('keeps chats private, follows idempotent, and inspection transitions restrict
  const users:any[]=[];for(let i=0;i<3;i++)users.push(await (await req('/v1/me','GET',i)).json());
  const [a,b,z]=users.map(u=>u.id);
  expect((await app.request('/v1/community/users',{},env)).status).toBe(401);
- expect((await req('/users/'+a+'/follow','PUT')).status).toBe(400);
- for(let i=0;i<2;i++)expect((await req('/users/'+b+'/follow','PUT')).status).toBe(200);
+ expect((await req('/users/'+a+'/contact','PUT')).status).toBe(400);
+ for(let i=0;i<2;i++)expect((await req('/users/'+b+'/contact','PUT')).status).toBe(200);
  expect((await (await req('/users/'+b)).json() as any).followersCount).toBe(1);
  expect((await (await req('/v1/me')).json() as any).followingCount).toBe(1);
- for(let i=0;i<2;i++)await req('/users/'+b+'/follow','DELETE');
+ for(let i=0;i<2;i++)await req('/users/'+b+'/contact','DELETE');
  expect((await (await req('/users/'+b)).json() as any).followersCount).toBe(0);
  const c:any=await (await req('/conversations','POST',0,{userId:b})).json();
  expect((await (await req('/conversations','POST',1,{userId:a})).json() as any).id).toBe(c.id);
@@ -44,6 +44,6 @@ it('keeps chats private, follows idempotent, and inspection transitions restrict
  expect((await (await req(path)).json() as any).status).toBe('completed');
  expect((await req('/inspections','POST',0,{title:'X',area:'Y',details:'Z',budget:-1})).status).toBe(400);
  db.prepare("UPDATE users SET status='suspended' WHERE id=?").run(z);
- expect((await req('/users/'+z+'/follow','PUT')).status).toBe(404);
+ expect((await req('/users/'+z+'/contact','PUT')).status).toBe(404);
  expect((await req('/conversations','GET',2)).status).toBe(403);
 });
