@@ -43,7 +43,7 @@ CLERK_PUBLISHABLE_KEY=pk_test_YOUR_COMPLETE_KEY
 CLOUDFLARE_API_URL=https://naija-homes-api.YOUR-SUBDOMAIN.workers.dev
 ```
 
-Set the applicable Production/Preview/Development environments, then deploy or redeploy. The build deliberately fails when keys are missing or malformed. Only these public values enter `dist/config.js`; do not add secret keys to this public configuration. The root `.env.example` can be copied to `.env` for local builds, but never commit the populated file.
+Set the applicable Production/Preview/Development environments, then deploy or redeploy. The build fails when the Clerk key is missing or malformed. If the API URL is absent, the frontend deploys with a clear backend setup notice; listing and profile actions stay disabled until the API is connected. Only these public values enter `dist/config.js`; do not add secret keys to this public configuration. The root `.env.example` can be copied to `.env` for local builds, but never commit the populated file.
 
 ## 4. Local development
 
@@ -72,7 +72,7 @@ References: https://clerk.com/docs/js-frontend/getting-started/quickstart · htt
 
 ## Validation
 
-Frontend syntax and both build-configuration tests passed during preparation. Backend tests were added for JWT authorized-party rejection, cross-user deletion, validation, saved-home isolation/cascade, and CORS. Backend dependency installation stalled in the preparation environment, so backend typechecking and tests have not been verified here. Before deploying, run at the project root:
+Frontend syntax and all three build-configuration tests passed during preparation. Backend tests were added for JWT authorized-party rejection, cross-user deletion, validation, saved-home isolation/cascade, and CORS. Backend dependency installation stalled in the preparation environment, so backend typechecking and tests have not been verified here. Before deploying, run at the project root:
 
 ```sh
 npm test
@@ -83,3 +83,4 @@ npm test
 ```
 
 Then perform the account-backed smoke test above. Do not treat the local SQLite shim as confirmation of hosted D1 behavior.
+
