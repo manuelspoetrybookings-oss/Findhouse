@@ -11,7 +11,7 @@ import { me } from "./routes/me";
 export function createApp(resolveKey: KeyResolver = clerkKeyResolver) {
   const app = new Hono<AppBindings>();
   app.use("*", secureHeaders());
-  app.use('*', cors({origin:(origin,c)=> (c.env.ALLOWED_ORIGINS||'').split(',').map(x=>x.trim()).includes(origin)?origin:undefined,allowMethods:['GET','POST','PATCH','PUT','DELETE','OPTIONS'],allowHeaders:['Content-Type','Authorization'],maxAge:600}));
+  app.use('*', cors({origin:(origin,c)=> (c.env.ALLOWED_ORIGINS||'').split(',').map((x: string)=>x.trim()).includes(origin)?origin:undefined,allowMethods:['GET','POST','PATCH','PUT','DELETE','OPTIONS'],allowHeaders:['Content-Type','Authorization'],maxAge:600}));
   app.use('/v1/*', bodyLimit({maxSize:16384,onError:c=>c.json({error:'body_too_large'},413)}));
 
   app.get("/health", (c) => c.json({ ok: true, env: c.env.ENVIRONMENT }));
