@@ -1,6 +1,6 @@
 # Naija Homes: Vercel + Clerk + Cloudflare
 
-This folder is the deployable project. Use this folder as the Vercel Root Directory. The frontend is hosted on Vercel; the API and D1 database are hosted on Cloudflare. Adding environment variables does not provision the Cloudflare resources: complete both sections below.
+This folder is the deployable project. Use web as the Vercel Root Directory, with Include source files outside the Root Directory enabled. The frontend is hosted on Vercel; the API and D1 database are hosted on Cloudflare. Adding environment variables does not provision the Cloudflare resources: complete both sections below.
 
 ## 1. Clerk
 
@@ -34,7 +34,7 @@ Copy the deployed Worker HTTPS origin. The API uses a D1 binding; no database pa
 
 ## 3. Vercel
 
-Upload this project to your Git repository and import it into Vercel. Use framework **Other**, build command `npm run build`, output directory `dist`, and Node.js 22 or newer. `vercel.json` supplies the build/output settings.
+Upload this project to your Git repository and import it into Vercel. Use Root Directory **web**, framework **Other**, build command `node ../scripts/build.mjs --web-root`, output directory `dist`, and Node.js 22 or newer. Enable **Include source files outside the Root Directory** so the build can use scripts/build.mjs. web/vercel.json supplies these commands. This keeps the separate Cloudflare api directory out of Vercel Functions.
 
 In Vercel Settings → Environment Variables, import `.env.example` and replace its two values:
 
@@ -72,7 +72,7 @@ References: https://clerk.com/docs/js-frontend/getting-started/quickstart · htt
 
 ## Validation
 
-Frontend syntax and all three build-configuration tests passed during preparation. Backend tests were added for JWT authorized-party rejection, cross-user deletion, validation, saved-home isolation/cascade, and CORS. Backend dependency installation stalled in the preparation environment, so backend typechecking and tests have not been verified here. Before deploying, run at the project root:
+Frontend syntax and all four build-configuration tests passed during preparation. Backend tests were added for JWT authorized-party rejection, cross-user deletion, validation, saved-home isolation/cascade, and CORS. Backend dependency installation stalled in the preparation environment, so backend typechecking and tests have not been verified here. Before deploying, run at the project root:
 
 ```sh
 npm test
@@ -83,4 +83,5 @@ npm test
 ```
 
 Then perform the account-backed smoke test above. Do not treat the local SQLite shim as confirmation of hosted D1 behavior.
+
 
