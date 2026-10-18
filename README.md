@@ -11,5 +11,5 @@ npm run build
 
 The build requires `CLERK_PUBLISHABLE_KEY`. Set `CLOUDFLARE_API_URL` after deploying the API; until then the frontend shows an explicit backend setup state. Copy `.env.example` for local use or set those variables in Vercel. Do not commit filled environment files.
 
-Connected implementation: accounts, profiles, shared property listings, owner-only removal, and saved homes. Media uploads, live messaging, inspection services and moderation remain future work. Placeholder cover photos and maps are illustrative.
+Connected implementation: accounts, profiles, shared property listings, owner-only removal, and saved homes. Private messaging (5-second refresh), following and inspection requests with offers, assignment and written reports are connected. Media uploads, payments, provider verification, push notifications and moderation remain future work. Placeholder cover photos and maps are illustrative.
 

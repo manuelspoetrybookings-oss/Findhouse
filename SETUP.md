@@ -13,12 +13,12 @@ In `api/` run:
 ```sh
 npm install
 npx wrangler login
-npx wrangler d1 create naija-homes
+npx wrangler d1 list
 ```
 
 Edit `api/wrangler.jsonc`:
 
-- Replace `database_id` with the ID returned by D1 creation.
+- The configured D1 database is `rentar`; the R2 bucket is also `rentar` (binding `MEDIA`). Create separate resources and replace these identifiers for another account.
 - Set `CLERK_ISSUER` to Clerk's Frontend API origin, without a trailing slash.
 - Set `CLERK_JWKS_URL` to that origin plus `/.well-known/jwks.json`.
 - Set `ALLOWED_ORIGINS` to your exact Vercel origin, for example `https://naija-homes.vercel.app`. Comma-separate additional **exact** origins if needed. Do not use `*.vercel.app`: that would trust other projects. Add your custom domain explicitly if using one.
@@ -64,15 +64,15 @@ New databases start empty. Sample listings and old browser-local posts are **not
 
 Connected: Clerk sign-in/sign-out; verified bearer-token API calls; D1-backed profiles, listing creation, public browsing, owner-only deletion, and per-user saved homes; exact CORS allowlist; JSON request-size limit; Vercel build-time environment configuration.
 
-Remaining: photo/video storage and upload processing, live chat, inspection bookings, following, moderation/admin tools, pagination beyond the first 200 listings, abuse/rate limiting and production monitoring review. Cover photos are clearly marked illustrative; media selection is disabled in this live wiring package. Maps are illustrative. These are not represented as live features.
+Remaining: photo/video storage and upload processing, push notifications, payments, provider verification, moderation/admin tools, pagination beyond the first 200 listings, abuse/rate limiting and production monitoring review. Private D1-backed chats refresh every 5 seconds while open. Follow/unfollow updates profile counts. Inspection requests support offers, requester-selected providers, written reports, completion and cancellation. Providers are independent and unverified; budgets are proposals, with no payment collection. Cover photos are clearly marked illustrative; media selection is disabled in this live wiring package. Maps are illustrative. These are not represented as live features.
 
-Clerk and Cloudflare account configuration, actual credentials and a deployed cross-service smoke test are still required. Automated API tests use local SQLite via a D1-compatible shim rather than the hosted D1 service.
+The Worker, D1 schema and R2 binding are deployed. Vercel uses the Worker URL. A signed-in production smoke test with real accounts remains a user check; no synthetic accounts were added to production. Automated API tests use local SQLite via a D1-compatible shim rather than the hosted D1 service.
 
 References: https://clerk.com/docs/js-frontend/getting-started/quickstart · https://clerk.com/docs/guides/sessions/manual-jwt-verification · https://developers.cloudflare.com/d1/ · https://vercel.com/docs/environment-variables
 
 ## Validation
 
-Frontend syntax and all four build-configuration tests passed during preparation. Backend tests were added for JWT authorized-party rejection, cross-user deletion, validation, saved-home isolation/cascade, and CORS. Backend dependency installation stalled in the preparation environment, so backend typechecking and tests have not been verified here. Before deploying, run at the project root:
+Frontend syntax and all four build-configuration tests passed during preparation. Backend tests were added for JWT authorized-party rejection, cross-user deletion, validation, saved-home isolation/cascade, and CORS. Backend typechecking and all 14 API tests passed locally, including three-account chat privacy and inspection authorization checks. The browser flow was verified against an isolated local database with synthetic accounts. Before deploying, run at the project root:
 
 ```sh
 npm test
