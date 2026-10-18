@@ -64,7 +64,7 @@ New databases start empty. Sample listings and old browser-local posts are **not
 
 Connected: Clerk sign-in/sign-out; verified bearer-token API calls; D1-backed profiles, listing creation, public browsing, owner-only deletion, and per-user saved homes; exact CORS allowlist; JSON request-size limit; Vercel build-time environment configuration.
 
-Remaining: photo/video storage and upload processing, push notifications, payments, provider verification, moderation/admin tools, pagination beyond the first 200 listings, abuse/rate limiting and production monitoring review. Private D1-backed chats refresh every 5 seconds while open. Follow/unfollow updates profile counts. Inspection requests support offers, requester-selected providers, written reports, completion and cancellation. Providers are independent and unverified; budgets are proposals, with no payment collection. Cover photos are clearly marked illustrative; media selection is disabled in this live wiring package. Maps are illustrative. These are not represented as live features.
+Remaining: property photo/video storage and upload processing, push notifications, payments, provider verification, moderation/admin tools, pagination beyond the first 200 listings, abuse/rate limiting and production monitoring review. Private D1-backed chats refresh every 5 seconds while open. Add/remove contact persists a private contact list. Inspection requests support offers, requester-selected providers, written reports, completion and cancellation. Providers are independent and unverified; budgets are proposals, with no payment collection. Cover photos are clearly marked illustrative; media selection is disabled in this live wiring package. Maps are illustrative. These are not represented as live features.
 
 The Worker, D1 schema and R2 binding are deployed. Vercel uses the Worker URL. A signed-in production smoke test with real accounts remains a user check; no synthetic accounts were added to production. Automated API tests use local SQLite via a D1-compatible shim rather than the hosted D1 service.
 
@@ -72,7 +72,7 @@ References: https://clerk.com/docs/js-frontend/getting-started/quickstart · htt
 
 ## Validation
 
-Frontend syntax and all four build-configuration tests passed during preparation. Backend tests were added for JWT authorized-party rejection, cross-user deletion, validation, saved-home isolation/cascade, and CORS. Backend typechecking and all 14 API tests passed locally, including three-account chat privacy and inspection authorization checks. The browser flow was verified against an isolated local database with synthetic accounts. Before deploying, run at the project root:
+Frontend syntax and all four build-configuration tests passed during preparation. Backend tests were added for JWT authorized-party rejection, cross-user deletion, validation, saved-home isolation/cascade, and CORS. Backend typechecking and all 15 API tests passed locally, including three-account chat privacy and inspection authorization checks. The browser flow was verified against an isolated local database with synthetic accounts. Before deploying, run at the project root:
 
 ```sh
 npm test
@@ -85,3 +85,5 @@ npm test
 Then perform the account-backed smoke test above. Do not treat the local SQLite shim as confirmation of hosted D1 behavior.
 
 
+
+Profile picture uploads use the MEDIA R2 binding. Usernames have case-insensitive database uniqueness. Phone numbers are withheld from other users unless sharePhone is explicitly enabled. Address is an optional business address or area visible to signed-in users. Chat does not expose phone numbers. Profile photos are public; private bucket objects are not listed or exposed by the API.
