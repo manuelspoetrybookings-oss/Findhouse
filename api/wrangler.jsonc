@@ -10,7 +10,7 @@
   },
   "vars": {
     "ENVIRONMENT": "production",
-    "CLERK_ISSUER": "https://clerk.rentarapp.vercel.app",
+    "CLERK_ISSUER": "https://rentarapp.vercel.app/__clerk",
     "CLERK_JWKS_URL": "https://rentarapp.vercel.app/__clerk/.well-known/jwks.json",
     "ALLOWED_ORIGINS": "https://rentarapp.vercel.app,https://lowoo.vercel.app,https://naija-homes-beta.vercel.app"
   },
