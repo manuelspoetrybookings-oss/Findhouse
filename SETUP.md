@@ -90,3 +90,6 @@ Profile picture uploads use the MEDIA R2 binding. Usernames have case-insensitiv
 
 Production Clerk uses CLERK_PROXY_URL=https://rentarapp.vercel.app/__clerk and the web/api/clerk.mjs Vercel Function. web/vercel.json rewrites /__clerk requests to that function. CLERK_SECRET_KEY is runtime-only and never copied into static output. The browser loads ClerkJS through the proxy for live publishable keys. Worker verification uses the production issuer and /__clerk/.well-known/jwks.json. This static JavaScript app does not use Next.js middleware. No vercel.app DNS records are required. Production email code delivery still requires an account-backed verification test.
 
+
+Marketplace inspection posts support idempotent likes, paginated comments, owner-only editing and owner/admin removal. Removal hides a post and its discussion with a database timestamp and audit record. The admin role is pinned in D1 to the account verified through Google; email or role fields in client requests and JWT custom claims never grant admin permissions. User-created profile text does not confer privileges.
+
