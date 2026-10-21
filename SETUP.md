@@ -93,3 +93,6 @@ Production Clerk uses CLERK_PROXY_URL=https://rentarapp.vercel.app/__clerk and t
 
 Marketplace inspection posts support idempotent likes, paginated comments, owner-only editing and owner/admin removal. Removal hides a post and its discussion with a database timestamp and audit record. The admin role is pinned in D1 to the account verified through Google; email or role fields in client requests and JWT custom claims never grant admin permissions. User-created profile text does not confer privileges.
 
+
+Signed-in startup shows Splashscreenlogo.png while account/feed requests and the first visible media load. Clerk session state controls the routing; the stored hint is presentation-only. Signed-out visitors land on the welcome page. Media waits are bounded at six seconds and the splash has a twelve-second escape timeout. Media errors release the splash instead of trapping navigation. The app beneath the splash is inert until loading finishes.
+
