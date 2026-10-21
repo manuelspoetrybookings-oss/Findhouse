@@ -11,7 +11,7 @@ window.NH={ready:false,error:null,me:null,listings:[],saved:[],
  async signIn(){if(!this.ready)throw Error(this.error||'Sign-in is still loading. Please try again.');window.Clerk.openSignIn();},
  async syncUser(){this.me=null;this.saved=[];if(window.Clerk.session&&window.NAIJA_CONFIG.apiUrl){const [me,saved]=await Promise.all([this.request('/v1/me'),this.request('/v1/saved')]);this.me=me;this.saved=saved.map(x=>x.id);}window.dispatchEvent(new Event('nh-data'));}
 };
-window.addEventListener('load',async()=>{
+async function initializeRentarAuth(){
  try{if(!window.Clerk)throw Error('Clerk could not load. Check the publishable key and network.');await window.Clerk.load({
  ui:{ClerkUI:window.__internal_ClerkUICtor},
  appearance:{
@@ -30,7 +30,18 @@ window.addEventListener('load',async()=>{
  },
  localization:{signIn:{start:{title:'Sign in to rentar',titleCombined:'Sign in to rentar',subtitle:'Your next home starts here.'}},signUp:{start:{title:'Create your rentar account',titleCombined:'Create your rentar account',subtitle:'Find a home. Connect with people.'}}}
  });window.NH.ready=true;
- window.Clerk.addListener(()=>{window.NH.syncUser().catch(err=>{window.NH.error=err.message;window.dispatchEvent(new Event('nh-error'));});});
- await Promise.all([window.NAIJA_CONFIG.apiUrl?window.NH.refresh():Promise.resolve(),window.NH.syncUser()]);
- }catch(err){window.NH.error=err.message;window.dispatchEvent(new Event('nh-error'));}
-});
+ let sessionId=window.Clerk.session?.id||null;
+ async function loadSession(initial){
+  const signedIn=!!window.Clerk.session;
+  try{localStorage.setItem('rentar-authenticated',signedIn?'1':'0');}catch{}
+  if(signedIn)window.RentarLoading?.show();else window.RentarLoading?.hide();
+  window.dispatchEvent(new CustomEvent('nh-session',{detail:{signedIn,initial}}));
+  try{await Promise.all([window.NAIJA_CONFIG.apiUrl?window.NH.refresh():Promise.resolve(),window.NH.syncUser()]);}
+  catch(err){window.NH.error=err.message;window.dispatchEvent(new Event('nh-error'));}
+  finally{await window.RentarLoading?.finish(signedIn);}
+ }
+ await loadSession(true);
+ window.Clerk.addListener(()=>{const next=window.Clerk.session?.id||null;if(next!==sessionId){sessionId=next;loadSession(false);}});
+ }catch(err){window.NH.error=err.message;window.dispatchEvent(new Event('nh-error'));window.RentarLoading?.hide();}
+}
+if(document.readyState==='complete')initializeRentarAuth();else window.addEventListener('DOMContentLoaded',initializeRentarAuth,{once:true});

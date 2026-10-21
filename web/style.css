@@ -5,3 +5,6 @@
 /* Brand logo stays centered between location and navigation tools. */
 .branded-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px}.nav-brand-logo{display:block;width:clamp(81.6px,22.1vw,112.2px);height:auto;object-fit:contain}.branded-topbar .location-select{justify-self:start;min-width:0;font-size:14px;gap:3px}.branded-topbar .top-icons{justify-self:end;gap:12px}
 
+
+#loading-splash{display:none;position:fixed;inset:0;z-index:9999;background:#fff;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#434541}#loading-splash img{width:min(52vw,220px);height:auto;object-fit:contain}#loading-splash p{font-size:14px}.rentar-splash-visible #loading-splash{display:flex}.rentar-splash-visible .app-shell{pointer-events:none}.splash-spinner{width:24px;height:24px;border:3px solid #e6e6e6;border-top-color:#25f420;border-radius:50%;animation:splash-spin .8s linear infinite}@keyframes splash-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.splash-spinner{animation:none}}
+
