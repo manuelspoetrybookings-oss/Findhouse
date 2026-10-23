@@ -15,15 +15,15 @@ async function initializeRentarAuth(){
  try{if(!window.Clerk)throw Error('Clerk could not load. Check the publishable key and network.');await window.Clerk.load({
  ui:{ClerkUI:window.__internal_ClerkUICtor},
  appearance:{
-  variables:{colorPrimary:'#25f420',colorPrimaryForeground:'#10120c',colorForeground:'#171a13',colorBackground:'#ffffff',colorInputBackground:'#ffffff',colorInputForeground:'#171a13',colorMutedForeground:'#68705e',colorNeutral:'#171a13',borderRadius:'16px',fontFamily:'Arial, sans-serif'},
+  variables:{colorPrimary:'#a7ea07',colorPrimaryForeground:'#10120c',colorForeground:'#171a13',colorBackground:'#ffffff',colorInputBackground:'#ffffff',colorInputForeground:'#171a13',colorMutedForeground:'#68705e',colorNeutral:'#171a13',borderRadius:'16px',fontFamily:'Arial, sans-serif'},
   elements:{
    cardBox:{borderRadius:'24px',boxShadow:'0 24px 80px rgba(0,0,0,.2)'},
    card:{background:'#fff',border:'1px solid #edf0e6'},
    headerTitle:{color:'#171a13',fontWeight:'800',letterSpacing:'-.03em'},
-   formButtonPrimary:{background:'#25f420',backgroundImage:'none',color:'#10120c',border:'none',boxShadow:'none',fontWeight:'700',minHeight:'46px','&:hover':{background:'#25f420'}},
+   formButtonPrimary:{background:'#a7ea07',backgroundImage:'none',color:'#10120c',border:'none',boxShadow:'none',fontWeight:'700',minHeight:'46px','&:hover':{background:'#a7ea07'}},
    socialButtonsBlockButton:{background:'#fff',border:'1px solid #dfe4d5',color:'#171a13',boxShadow:'none',minHeight:'44px'},
-   formFieldInput:{border:'1px solid #dfe4d5',borderRadius:'12px',boxShadow:'none','&:focus':{borderColor:'#25f420',boxShadow:'0 0 0 3px rgba(37,244,32,.25)'}},
-   footer:{background:'#efffee',backgroundImage:'none'},
+   formFieldInput:{border:'1px solid #dfe4d5',borderRadius:'12px',boxShadow:'none','&:focus':{borderColor:'#a7ea07',boxShadow:'0 0 0 3px rgba(167,234,7,.25)'}},
+   footer:{background:'#f5fde6',backgroundImage:'none'},
    footerActionLink:{color:'#526b00',fontWeight:'700'},
    modalCloseButton:{color:'#171a13'},
   }
