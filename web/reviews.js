@@ -1,0 +1,43 @@
+// Property reviews are persisted in Cloudflare; this module contains no demo posts.
+const reviewDisclaimer='Reviews are solely the personal opinions and experiences of the users who post them, not those of rentar. Users are responsible for the content and accuracy of their reviews about a property.';
+const reviewFields=[['overall','Overall experience'],['road','Road network'],['security','Security'],['electricity','Electricity / light'],['landlord','Landlord / caretaker'],['flooding','Flood safety']];
+const reviewState={rows:[],loading:false,error:'',more:false,generation:0};
+const reviewBaseRender=render;
+function reviewNotice(){return `<aside class="review-disclaimer"><b>About these reviews</b><p>${e(reviewDisclaimer)}</p></aside>`;}
+function reviewCard(r){return `<article class="review-card">${r.hasPhoto?`<img class="review-photo" src="${e(window.NAIJA_CONFIG.apiUrl+'/v1/reviews/'+encodeURIComponent(r.id)+'/photo')}" alt="${e(r.property_name)} — photo shared by reviewer" loading="lazy">`:''}<div class="review-card-body"><div class="review-card-heading"><h2>${e(r.property_name)}</h2><strong class="review-score">${Number(r.ratings.overall)} / 5</strong></div><p class="muted">${e(r.area)}</p><button class="review-author" data-person="${e(r.author_id)}">${e(r.displayName)} · @${e(r.handle)}</button><small>${e(new Date(r.created_at*1000).toLocaleDateString())}</small><div class="review-ratings">${reviewFields.slice(1).map(([k,label])=>`<div><b>${e(label)} <span>${Number(r.ratings[k])} / 5</span></b>${r.category_notes[k]?`<p>${e(r.category_notes[k])}</p>`:''}</div>`).join('')}</div><p class="review-notes">${e(r.notes)}</p>${window.NH.me?.id===r.author_id||window.NH.me?.role==='admin'?`<button class="text-button" data-review-delete="${e(r.id)}">Delete review</button>`:''}</div></article>`;}
+function reviewView(){
+ if(screen==='review-new')return pageHeader('Review a home')+`<div class="page-pad">${reviewNotice()}<p class="sample-note">Share your own experience of a property you have stayed in. Reviews and photos are public. Avoid private phone numbers or other people's personal details.</p><form id="property-review-form" class="post-form review-form"><label class="field">Property name / description<input name="propertyName" minlength="2" maxlength="100" placeholder="e.g. Two-bedroom apartment on Admiralty Way" required></label><label class="field">Property location / area<input name="area" minlength="2" maxlength="180" placeholder="Street or estate, neighbourhood and city" required></label><p class="review-scale">All ratings are out of 5: 1 = very poor, 5 = excellent. For flood safety, 1 = frequent flooding and 5 = no flooding experienced.</p>${reviewFields.map(([key,label])=>`<fieldset class="review-category"><legend>${e(label)}</legend><label class="field">Rating out of 5<select name="rating-${key}" required aria-label="${e(label)} rating"><option value="">Choose a rating</option>${[1,2,3,4,5].map(n=>`<option value="${n}">${n} / 5</option>`).join('')}</select></label><label class="field">${e(label)} notes (optional)<textarea name="note-${key}" maxlength="500" rows="2" placeholder="Describe your experience"></textarea></label></fieldset>`).join('')}<label class="field">Your review / additional notes<textarea name="notes" maxlength="2000" rows="4" required placeholder="What should someone know before moving in?"></textarea></label><label class="field">Property picture (optional)<input type="file" name="photo" accept="image/jpeg,image/png,image/webp"></label><small>JPEG, PNG or WebP, up to 2 MB. Upload a photo you have permission to share.</small><label class="review-confirm"><input type="checkbox" name="stayedHere" required>I have stayed in this property and this review reflects my own experience.</label><label class="review-confirm"><input type="checkbox" name="acceptedDisclaimer" required>I understand these are my opinions, not rentar's, and I am responsible for my review.</label><p id="review-feedback" role="alert"></p><button class="primary full">Publish review</button></form></div>`;
+ return pageHeader('Property reviews')+modes()+`<div class="page-pad"><div class="review-intro"><h2>What is it like to live here?</h2><p>Experiences from people who have stayed in a home.</p><button class="primary" data-review-new>Write a review</button></div>${reviewNotice()}${reviewState.error?`<p role="alert">${e(reviewState.error)}</p><button class="secondary full" data-review-retry>Retry</button>`:''}${reviewState.rows.map(reviewCard).join('')}${reviewState.loading?'<p role="status" class="sample-note">Loading reviews…</p>':!reviewState.error&&!reviewState.rows.length?empty('No property reviews yet.','Stayed somewhere? Share your experience to help the next person.'):''}${reviewState.more&&!reviewState.loading?'<button class="secondary full" data-review-more>Load more reviews</button>':''}</div>`;
+}
+render=function(){if(['reviews','review-new'].includes(screen)){bottom();$('#app').innerHTML=reviewView();}else{reviewBaseRender();if(screen==='marketplace')$('#app').innerHTML=$('#app').innerHTML.replace('</header>','</header>'+modes());}};
+async function loadReviews(more=false){
+ const generation=++reviewState.generation;reviewState.loading=true;reviewState.error='';render();
+ try{const rows=await window.NH.request('/v1/reviews'+(more&&reviewState.rows.length?'?before='+encodeURIComponent(reviewState.rows.at(-1).id):''),{auth:false});if(generation!==reviewState.generation)return;reviewState.rows=more?[...reviewState.rows,...rows]:rows;reviewState.more=rows.length===30;}
+ catch(err){if(generation===reviewState.generation)reviewState.error='Could not load reviews. '+err.message;}
+ finally{if(generation===reviewState.generation){reviewState.loading=false;if(screen==='reviews')render();}}
+}
+document.addEventListener('click',async event=>{
+ const b=event.target.closest('button');if(!b)return;const d=b.dataset;
+ if(!['Review','Homes'].includes(d.mode)&&!['reviewNew','reviewRetry','reviewMore','reviewDelete','reviewConfirmDelete'].some(k=>k in d))return;
+ event.preventDefault();event.stopImmediatePropagation();
+ if(d.mode==='Homes'){mode='Homes';navigate('home');return;}
+ if(d.mode==='Review'){mode='Review';navigate('reviews');await loadReviews();return;}
+ if('reviewRetry' in d||'reviewMore' in d){await loadReviews('reviewMore' in d);return;}
+ if(!requireSession())return;
+ if('reviewNew' in d){navigate('review-new');return;}
+ if('reviewDelete' in d){modal('Delete review?',`<p>Remove this review and its picture from the public page?</p><button class="primary full" data-review-confirm-delete="${e(d.reviewDelete)}">Delete review</button><button class="secondary full" data-action="close-modal">Keep review</button>`);return;}
+ b.disabled=true;try{await window.NH.request('/v1/reviews/'+encodeURIComponent(d.reviewConfirmDelete),{method:'DELETE'});$('#modal').close();await loadReviews();toast('Review deleted.');}catch(err){toast(err.message);}finally{b.disabled=false;}
+},true);
+document.addEventListener('submit',async event=>{
+ if(event.target.id!=='property-review-form')return;event.preventDefault();event.stopImmediatePropagation();if(!requireSession())return;
+ const form=event.target,data=new FormData(form),button=form.querySelector('button'),feedback=form.querySelector('#review-feedback');feedback.textContent='';
+ const photo=data.get('photo');if(photo instanceof File&&photo.size&&(photo.size>2*1024*1024||!['image/jpeg','image/png','image/webp'].includes(photo.type))){feedback.textContent='Choose a JPEG, PNG or WebP picture up to 2 MB.';return;}
+ const body={propertyName:data.get('propertyName'),area:data.get('area'),notes:data.get('notes'),ratings:{},categoryNotes:{},stayedHere:data.has('stayedHere'),acceptedDisclaimer:data.has('acceptedDisclaimer')};
+ reviewFields.forEach(([k])=>{body.ratings[k]=Number(data.get('rating-'+k));body.categoryNotes[k]=data.get('note-'+k);});
+ const upload=new FormData();upload.set('review',JSON.stringify(body));if(photo instanceof File&&photo.size)upload.set('photo',photo);
+ button.disabled=true;button.textContent='Publishing…';
+ try{const token=await window.Clerk.session.getToken();const response=await fetch(window.NAIJA_CONFIG.apiUrl+'/v1/reviews',{method:'POST',headers:{Authorization:'Bearer '+token},body:upload});const result=await response.json();if(!response.ok)throw Error(result.error||'Review could not be published.');mode='Review';navigate('reviews');await loadReviews();toast('Review published.');}
+ catch(err){feedback.textContent='Could not publish your review. '+err.message;}
+ finally{button.disabled=false;button.textContent='Publish review';}
+},true);
+render();

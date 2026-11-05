@@ -1,0 +1,23 @@
+import {it,expect} from 'vitest';
+import {generateKeyPair,SignJWT} from 'jose';
+import {createApp} from '../src/index';
+import {makeD1} from './helpers/d1';
+it('validates reviews and images, persists ratings, and enforces author/admin deletion',async()=>{
+ const {publicKey,privateKey}=await generateKeyPair('RS256'),{d1,db}=makeD1(),app=createApp(()=>publicKey),objects=new Map<string,any>();
+ const env={DB:d1,ENVIRONMENT:'test',CLERK_ISSUER:'https://clerk.example',CLERK_JWKS_URL:'unused',ALLOWED_ORIGINS:'https://rentarapp.vercel.app',MEDIA:{async put(k:string,b:any,o:any){objects.set(k,{bytes:b,...o});},async get(k:string){const v=objects.get(k);return v?{body:v.bytes,httpMetadata:v.httpMetadata}:null;},async delete(k:string){objects.delete(k);}}} as any;
+ const tokens=await Promise.all(['author','other','admin'].map(sub=>new SignJWT({azp:'https://rentarapp.vercel.app'}).setProtectedHeader({alg:'RS256'}).setIssuer(env.CLERK_ISSUER).setSubject(sub).setIssuedAt().setExpirationTime('5m').sign(privateKey)));
+ const req=(path:string,method='GET',who=-1,body?:FormData)=>app.request('/v1'+path,{method,headers:who<0?{}:{Authorization:'Bearer '+tokens[who]},body},env);
+ const users:any[]=[];for(let i=0;i<3;i++)users.push(await (await req('/me','GET',i)).json());db.prepare("UPDATE users SET role='admin' WHERE id=?").run(users[2].id);
+ const valid={propertyName:'Apartment 4',area:'Lekki, Lagos',notes:'My experience <script>',ratings:{overall:4,road:3,security:4,electricity:2,landlord:5,flooding:1},categoryNotes:{flooding:'Flooded in July'},stayedHere:true,acceptedDisclaimer:true};
+ const form=(v:unknown=valid,photo?:Blob)=>{const f=new FormData();f.set('review',JSON.stringify(v));if(photo)f.set('photo',photo,'property.png');return f;};
+ expect((await req('/reviews','POST',-1,form())).status).toBe(401);
+ for(const v of [{...valid,acceptedDisclaimer:false},{...valid,stayedHere:false},{...valid,ratings:{...valid.ratings,road:6}},{...valid,ratings:{...valid.ratings,road:2.5}},{...valid,notes:''}])expect((await req('/reviews','POST',0,form(v))).status).toBe(400);
+ expect((await req('/reviews','POST',0,form(valid,new Blob(['<svg/>'],{type:'image/png'})))).status).toBe(400);
+ expect((await req('/reviews','POST',0,form(valid,new Blob([new Uint8Array(2*1024*1024+1)])))).status).toBe(413);
+ const response=await req('/reviews','POST',0,form(valid,new Blob([new Uint8Array([137,80,78,71,13,10,26,10,0])],{type:'image/png'})));expect(response.status).toBe(201);const {id}=await response.json() as any;
+ const rows=await (await req('/reviews')).json() as any[];expect(rows).toHaveLength(1);expect(rows[0].ratings).toEqual(valid.ratings);expect(rows[0].category_notes.flooding).toBe('Flooded in July');expect(rows[0].author_id).toBe(users[0].id);expect(rows[0].hasPhoto).toBe(true);expect(rows[0].photo_key).toBeUndefined();expect(rows[0].notes).toContain('<script>');
+ expect((await req('/reviews/'+id+'/photo')).headers.get('Content-Type')).toBe('image/png');expect(await (await req('/reviews?before='+id)).json()).toEqual([]);
+ expect((await req('/reviews/'+id,'DELETE',1)).status).toBe(403);expect((await req('/reviews/'+id,'DELETE',2)).status).toBe(200);expect(await (await req('/reviews')).json()).toEqual([]);expect((await req('/reviews/'+id+'/photo')).status).toBe(404);
+ const own=await (await req('/reviews','POST',0,form())).json() as any;expect((await req('/reviews/'+own.id,'DELETE',0)).status).toBe(200);
+ await req('/reviews','POST',1,form());db.prepare("UPDATE users SET status='suspended' WHERE id=?").run(users[1].id);expect(await (await req('/reviews')).json()).toEqual([]);
+});
